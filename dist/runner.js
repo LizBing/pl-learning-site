@@ -1,4 +1,7 @@
+import { createHaskellRunner } from "./haskell/runner.js";
+
 export function createRunner(courseId) {
+  if (courseId === "haskell") return createHaskellRunner();
   const isZig = courseId === "zig";
   let worker;
   let active;

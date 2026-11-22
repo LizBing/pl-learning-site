@@ -1,5 +1,6 @@
 import { course as go, playgroundCode } from "./go/course.js";
 import { modules as zigModules, sandbox } from "./zig/course.js";
+import { course as haskell } from "./haskell/course.js";
 
 const zigDocs = "https://ziglang.org/documentation/0.17.0/";
 
@@ -31,5 +32,6 @@ export const workbenches = {
         reference: zigDocs + "#" + lesson.reference
       }))
     }))
-  }
+  },
+  haskell
 };

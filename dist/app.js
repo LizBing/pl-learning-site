@@ -3,6 +3,7 @@ import { createRunner } from "./runner.js";
 
 const course = workbenches[document.body.dataset.course];
 const isZig = course.id === "zig";
+const isHaskell = course.id === "haskell";
 const runner = createRunner(course.id);
 
 const icons = {
@@ -19,6 +20,8 @@ const icons = {
   bulb: '<path d="M9 19h6m-5 3h4m-5-6c0-2-3-3-3-7a6 6 0 1 1 12 0c0 4-3 5-3 7z"/>',
   reset: '<path d="M4 11a8 8 0 1 1 2.2 6M4 5v6h6"/>',
   play: '<path d="m8 5 12 7-12 7z" fill="currentColor" stroke="none"/>',
+  stop: '<rect x="7" y="7" width="10" height="10" rx="1" fill="currentColor" stroke="none"/>',
+  copy: '<rect x="8" y="8" width="12" height="12" rx="2"/><path d="M16 8V6a2 2 0 0 0-2-2H6a2 2 0 0 0-2 2v8a2 2 0 0 0 2 2h2"/>',
   check: '<path d="m5 12 4.5 4.5L19 7"/>',
   brackets: '<path d="M9 4H7a2 2 0 0 0-2 2v3a3 3 0 0 1-3 3 3 3 0 0 1 3 3v3a2 2 0 0 0 2 2h2m6-16h2a2 2 0 0 1 2 2v3a3 3 0 0 0 3 3 3 3 0 0 0-3 3v3a2 2 0 0 1-2 2h-2"/>',
   flag: '<path d="M5 21V4m0 1c5-4 9 4 14 0v9c-5 4-9-4-14 0"/>'
@@ -85,7 +88,9 @@ function hero() {
       <p>${course.description}</p>
       <div class="hero-meta"><span>${icon("layers", 17)} ${course.modules.length} modules</span><span>${icon("book", 16)} ${lessons.length} lessons</span><span>${icon("clock", 17)} ~${Math.round(time / 60)} hours</span></div>
     </div>
-    <div class="hero-art" aria-hidden="true"><img src="${course.art.path}" alt="" width="${course.art.width}" height="${course.art.height}"></div>
+    <div class="hero-art ${isHaskell ? "haskell-art" : ""}" aria-hidden="true">${course.art
+      ? `<img src="${course.art.path}" alt="" width="${course.art.width}" height="${course.art.height}">`
+      : "λ"}</div>
   </section>`;
 }
 
@@ -163,6 +168,7 @@ function editorPanel(lesson) {
         <button type="button" id="run" class="button button-accent" aria-keyshortcuts="Control+Enter Meta+Enter">${icon("play", 17)} <span>Run code</span></button>
       </div>
     </div>
+    ${isHaskell ? `<p class="remote-run-note">${lesson ? "Running or checking" : "Running"} sends this code to the Haskell Playground. <a href="https://play.haskell.org/" target="_blank" rel="noopener noreferrer">Open playground</a></p>` : ""}
     <div class="file-bar">
       <span class="file-tab">${icon("brackets", 15)} ${course.file}</span>
       <button type="button" id="copy-code" class="button button-quiet" aria-label="Copy code" title="Copy code">${icon("copy", 16)}</button>
@@ -220,7 +226,7 @@ function render({ focus = false } = {}) {
       <div class="page-intro"><span class="page-icon">${icon("terminal", 26)}</span><h1>${course.name} playground</h1><p>Try an idea, test a snippet, or write a program from scratch.</p></div>
       <div class="playground-layout">${editorPanel()}<aside class="panel playground-guide">
         <h2>${icon("book", 19)} About this editor</h2>
-        <p>Run a single-file ${course.name} program in your browser. Your code is saved here as you type.</p>
+        ${isHaskell ? "" : `<p>Run a single-file ${course.name} program in your browser. Your code is saved here as you type.</p>`}
         ${course.playgroundNote}
       </aside></div>
     </div>`;
@@ -247,13 +253,23 @@ const builtins = new Set("any append bool byte cap clear close complex copy dele
 const goTokens = /\/\/[^\n]*|\/\*[\s\S]*?\*\/|"(?:\\.|[^"\\\n])*"?|'(?:\\.|[^'\\\n])*'?|`[\s\S]*?`|\b(?:0[xX][0-9a-fA-F]+|\d+(?:\.\d+)?)\b|[a-zA-Z_][a-zA-Z_0-9]*/g;
 
 const zigTokens = /\/\/[^\n]*|"(?:\\.|[^"\\\n])*"?|'(?:\\.|[^'\\\n])*'?|@[A-Za-z_]\w*|\b(?:const|var|pub|fn|return|if|else|while|for|switch|struct|comptime|error|catch|try|orelse|defer|errdefer|test|async|union|enum|break|continue|unreachable)\b|\b(?:[uif]\d+|usize|isize|void|bool|type|anytype|true|false|null)\b|\b\d[\da-fA-F_xob.]*\b/g;
+const haskellTokens = /--[^\n]*|\{-[\s\S]*?-\}|"(?:\\.|[^"\\\n])*"?|'(?:\\.|[^'\\\n])'|\b\d+(?:\.\d+)?\b|\b[A-Za-z_][\w']*/g;
+const haskellKeywords = new Set("case class data deriving do else if import in instance let module newtype of qualified then type where as hiding".split(" "));
+
+function haskellTokenStyle(value) {
+  if (value.startsWith("--") || value.startsWith("{-")) return "comment";
+  if (/^["']/.test(value)) return "string";
+  if (haskellKeywords.has(value)) return "keyword";
+  return /^[A-Z0-9]/.test(value) ? "value" : "";
+}
 
 function highlightCode(code) {
   let html = "";
   let last = 0;
-  for (const match of code.matchAll(isZig ? zigTokens : goTokens)) {
+  for (const match of code.matchAll(isHaskell ? haskellTokens : isZig ? zigTokens : goTokens)) {
     const value = match[0];
-    const style = isZig ? zigTokenStyle(value)
+    const style = isHaskell ? haskellTokenStyle(value)
+      : isZig ? zigTokenStyle(value)
       : value.startsWith("//") || value.startsWith("/*") ? "comment"
       : ['"', "'", "`"].includes(value[0]) ? "string"
       : keywords.has(value) ? "keyword"
