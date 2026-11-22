@@ -41,6 +41,34 @@ export const modules = [
         expected: "12", hint: 'The starting score is <code>5</code>, so <code>bonus</code> should be <code>7</code>.'
       },
       {
+        id: "repair-binding", title: "Repair a read-only binding", minutes: 5, reference: "Local-Variables",
+        reading: "https://pedropark99.github.io/zig-book/Chapters/03-structs.html",
+        explanation: [
+          "Run the starter and find the line the compiler flags. A <code>const</code> binding keeps the same value after initialization.",
+  "Here the running total needs to change. The delivery count can stay constant."
+        ],
+        task: "Fix the declaration of <code>stock</code> so the program can add the delivery.",
+        starter: String.raw`const std = @import("std");
+
+pub fn main() void {
+    const stock: u16 = 8;
+    const delivery: u16 = 5;
+    stock += delivery;
+    std.debug.print("{d}\n", .{stock});
+}
+`,
+        solution: String.raw`const std = @import("std");
+
+pub fn main() void {
+    var stock: u16 = 8;
+    const delivery: u16 = 5;
+    stock += delivery;
+    std.debug.print("{d}\n", .{stock});
+}
+`,
+        expected: "13", hint: "Change the keyword on <code>stock</code> and leave <code>delivery</code> as a constant."
+      },
+      {
         id: "types", title: "Integers & booleans", minutes: 5, reference: "Primitive-Types",
         explanation: [
           "Zig lets you specify integer widths. <code>u8</code> holds values from 0 to 255. <code>i8</code> holds values from −128 to 127.",
@@ -165,6 +193,90 @@ const Rectangle = struct {
 };
 `,
         expected: "24", hint: 'Multiply both fields, accessing them through <code>self</code>.'
+      },
+      {
+        id: "enum-switch", title: "Repair an incomplete switch", minutes: 8, reference: "Exhaustive-Switching",
+        reading: "https://pedropark99.github.io/zig-book/Chapters/03-structs.html",
+        explanation: [
+          "An enum names the possible states of a value. Here a traffic light can be red, amber, or green.",
+  "Without a catch-all branch, <code>switch</code> must handle every declared enum value. The compiler identifies the missing case."
+        ],
+        task: "Run the starter, then add the amber branch. It should return <code>wait</code>.",
+        starter: String.raw`const std = @import("std");
+
+const Light = enum { red, amber, green };
+
+fn action(light: Light) []const u8 {
+    return switch (light) {
+        .red => "stop",
+        // Handle the missing state.
+        .green => "go",
+    };
+}
+
+pub fn main() void {
+    std.debug.print("{s} {s} {s}\n", .{ action(.red), action(.amber), action(.green) });
+}
+`,
+        solution: String.raw`const std = @import("std");
+
+const Light = enum { red, amber, green };
+
+fn action(light: Light) []const u8 {
+    return switch (light) {
+        .red => "stop",
+        .amber => "wait",
+        .green => "go",
+    };
+}
+
+pub fn main() void {
+    std.debug.print("{s} {s} {s}\n", .{ action(.red), action(.amber), action(.green) });
+}
+`,
+        expected: "stop wait go", hint: "Add <code>.amber =&gt; \"wait\",</code> alongside the other branches."
+      },
+      {
+        id: "tagged-union", title: "Unpack a tagged union", minutes: 9, reference: "Tagged-union",
+        reading: "https://pedropark99.github.io/zig-book/Chapters/09-error-handling.html",
+        explanation: [
+          "A tagged union stores one variant at a time. A pickup has a text label. A delivery has an integer route number.",
+  "A switch branch can capture the active variant’s payload with <code>|value|</code>. Zig infers its type from the branch."
+        ],
+        task: "Update both branches of <code>describe</code> so each prints the payload it receives.",
+        starter: String.raw`const std = @import("std");
+
+const Order = union(enum) { pickup: []const u8, delivery: u32 };
+
+fn describe(order: Order) void {
+    switch (order) {
+        .pickup => std.debug.print("pickup\n", .{}),
+        .delivery => std.debug.print("delivery\n", .{}),
+    }
+}
+
+pub fn main() void {
+    describe(.{ .pickup = "north desk" });
+    describe(.{ .delivery = 42 });
+}
+`,
+        solution: String.raw`const std = @import("std");
+
+const Order = union(enum) { pickup: []const u8, delivery: u32 };
+
+fn describe(order: Order) void {
+    switch (order) {
+        .pickup => |label| std.debug.print("pickup: {s}\n", .{label}),
+        .delivery => |route| std.debug.print("delivery: {d}\n", .{route}),
+    }
+}
+
+pub fn main() void {
+    describe(.{ .pickup = "north desk" });
+    describe(.{ .delivery = 42 });
+}
+`,
+        expected: "pickup: north desk\ndelivery: 42", hint: "Use <code>{s}</code> for the pickup label and <code>{d}</code> for the delivery route."
       }
     ]
   },
@@ -220,6 +332,52 @@ fn validated(value: u32) InputError!u32 {
         expected: "7 99", hint: 'Add <code>if (value == 0) return error.Empty;</code> before the existing return.'
       },
       {
+        id: "propagate-errors", title: "Repair error propagation", minutes: 8, reference: "try",
+        reading: "https://pedropark99.github.io/zig-book/Chapters/09-error-handling.html",
+        explanation: [
+          "The type <code>error{Empty}!u32</code> holds either a number or an error. Arithmetic needs the number inside.",
+  "<code>try</code> gives you the number on success and returns the same error to the caller on failure. The caller can use <code>catch</code> to provide a fallback."
+        ],
+        task: "Fix <code>withBonus</code> so it adds two to valid scores and propagates <code>error.Empty</code>.",
+        starter: String.raw`const std = @import("std");
+
+const ScoreError = error{Empty};
+
+fn checked(score: u32) ScoreError!u32 {
+    if (score == 0) return error.Empty;
+    return score;
+}
+
+fn withBonus(score: u32) ScoreError!u32 {
+    const value = checked(score);
+    return value + 2;
+}
+
+pub fn main() void {
+    std.debug.print("{d} {d}\n", .{ withBonus(7) catch 99, withBonus(0) catch 99 });
+}
+`,
+        solution: String.raw`const std = @import("std");
+
+const ScoreError = error{Empty};
+
+fn checked(score: u32) ScoreError!u32 {
+    if (score == 0) return error.Empty;
+    return score;
+}
+
+fn withBonus(score: u32) ScoreError!u32 {
+    const value = try checked(score);
+    return value + 2;
+}
+
+pub fn main() void {
+    std.debug.print("{d} {d}\n", .{ withBonus(7) catch 99, withBonus(0) catch 99 });
+}
+`,
+        expected: "9 99", hint: "Put <code>try</code> before the call to <code>checked(score)</code>."
+      },
+      {
         id: "pointers", title: "Pointers & mutation", minutes: 8, reference: "Pointers",
         explanation: [
           "<code>&amp;score</code> takes the address of a variable. A <code>*u32</code> parameter can receive that address, giving the function access to the original value.",
@@ -243,6 +401,48 @@ fn increment(score: *u32) void {
         expected: "42", hint: 'The dereference is already in place. Change the amount added to <code>score.*</code>.'
       },
       {
+        id: "allocator-cleanup", title: "Allocate and release a buffer", minutes: 10, reference: "defer",
+        reading: "https://pedropark99.github.io/zig-book/Chapters/01-memory.html",
+        explanation: [
+          "An allocator hands out memory at runtime. <code>alloc(u8, len)</code> returns a writable slice or an allocation error.",
+  "The function that owns the allocation must return it to the same allocator. Schedule <code>free</code> with <code>defer</code> immediately after a successful allocation so cleanup runs on every later exit."
+        ],
+        task: "Add a deferred free in <code>showCopy</code>. The starter uses a fixed buffer so the second call can only allocate after the first releases its memory.",
+        starter: String.raw`const std = @import("std");
+
+fn showCopy(allocator: std.mem.Allocator, input: []const u8) !void {
+    const copy = try allocator.alloc(u8, input.len);
+    // Release the allocation when this function returns.
+    @memcpy(copy, input);
+    std.debug.print("{s}\n", .{copy});
+}
+
+pub fn main() !void {
+    var memory: [4]u8 = undefined;
+    var buffer = std.heap.FixedBufferAllocator.init(&memory);
+    try showCopy(buffer.allocator(), "Zig!");
+    try showCopy(buffer.allocator(), "Next");
+}
+`,
+        solution: String.raw`const std = @import("std");
+
+fn showCopy(allocator: std.mem.Allocator, input: []const u8) !void {
+    const copy = try allocator.alloc(u8, input.len);
+    defer allocator.free(copy);
+    @memcpy(copy, input);
+    std.debug.print("{s}\n", .{copy});
+}
+
+pub fn main() !void {
+    var memory: [4]u8 = undefined;
+    var buffer = std.heap.FixedBufferAllocator.init(&memory);
+    try showCopy(buffer.allocator(), "Zig!");
+    try showCopy(buffer.allocator(), "Next");
+}
+`,
+        expected: "Zig!\nNext", hint: "Write <code>defer allocator.free(copy);</code> immediately after <code>alloc</code>."
+      },
+      {
         id: "comptime", title: "Compile-time parameters", minutes: 9, reference: "comptime",
         explanation: [
           "<code>comptime</code> requires an argument to be known at compile time. This allows functions to accept types as arguments and use them in other parameter and return types.",
@@ -260,6 +460,186 @@ fn twice(comptime T: type, value: T) T {
 }
 `,
         expected: "14 -8", hint: 'Return <code>value * 2</code>. The literal <code>2</code> can be coerced to either integer type here.'
+      }
+    ]
+  },
+  {
+    title: "Project: Base64", icon: "terminal", level: "Project",
+    description: "Encode and decode bytes using bit operations, output buffers, and error handling.",
+    lessons: [
+      {
+        id: "base64-bits", title: "Split bytes into six-bit groups", minutes: 9, reference: "Table-of-Operators",
+        reading: "https://pedropark99.github.io/zig-book/Chapters/01-base64.html",
+        explanation: [
+          "Base64 represents six bits at a time. Three input bytes fit into 24 bits and form four groups.",
+  "The starter packs the bytes into a <code>u24</code>. Shift a group down to the low bits, then use <code>&amp; 0x3f</code> to keep just six bits."
+        ],
+        task: "Complete the third group. Its six bits start 6 bits above the low end of <code>word</code>.",
+        starter: String.raw`const std = @import("std");
+
+fn showGroups(bytes: [3]u8) void {
+    const word = (@as(u24, bytes[0]) << 16) |
+        (@as(u24, bytes[1]) << 8) | @as(u24, bytes[2]);
+    std.debug.print("{d} {d} {d} {d}\n", .{
+        (word >> 18) & 0x3f,
+        (word >> 12) & 0x3f,
+        @as(u24, 0),
+        word & 0x3f,
+    });
+}
+
+pub fn main() void {
+    showGroups(.{ 'Z', 'i', 'g' });
+    showGroups(.{ 0, 0, 64 });
+}
+`,
+        solution: String.raw`const std = @import("std");
+
+fn showGroups(bytes: [3]u8) void {
+    const word = (@as(u24, bytes[0]) << 16) |
+        (@as(u24, bytes[1]) << 8) | @as(u24, bytes[2]);
+    std.debug.print("{d} {d} {d} {d}\n", .{
+        (word >> 18) & 0x3f,
+        (word >> 12) & 0x3f,
+        (word >> 6) & 0x3f,
+        word & 0x3f,
+    });
+}
+
+pub fn main() void {
+    showGroups(.{ 'Z', 'i', 'g' });
+    showGroups(.{ 0, 0, 64 });
+}
+`,
+        expected: "22 38 37 39\n0 0 1 0", hint: "Shift right by <code>6</code> and mask with <code>0x3f</code>."
+      },
+      {
+        id: "base64-encode", title: "Encode blocks and add padding", minutes: 14, reference: "Slices",
+        reading: "https://pedropark99.github.io/zig-book/Chapters/01-base64.html",
+        explanation: [
+          "Each six-bit group indexes the 64-character alphabet. For a short final block, the starter treats missing input bytes as zero while packing.",
+  "One input byte produces two characters and two padding marks. Two bytes produce three characters and one padding mark. A full block uses all four characters."
+        ],
+        task: "Fix the last two assignments in <code>encode</code>. Write an alphabet character only when its group contains input bits. Otherwise write <code>=</code>.",
+        starter: String.raw`const std = @import("std");
+
+const alphabet = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/";
+
+// The caller supplies four output bytes per input block.
+fn encode(input: []const u8, output: []u8) []const u8 {
+    var read: usize = 0;
+    var written: usize = 0;
+    while (read < input.len) : (written += 4) {
+        const block = input[read..][0..@min(3, input.len - read)];
+        var word: u24 = 0;
+        for (block, 0..) |byte, i| {
+            const shift: u5 = @intCast(16 - 8 * i);
+            word |= @as(u24, byte) << shift;
+        }
+
+        output[written] = alphabet[(word >> 18) & 0x3f];
+        output[written + 1] = alphabet[(word >> 12) & 0x3f];
+        output[written + 2] = alphabet[(word >> 6) & 0x3f];
+        output[written + 3] = alphabet[word & 0x3f];
+        read += block.len;
+    }
+    return output[0..written];
+}
+
+pub fn main() void {
+    var output: [8]u8 = undefined;
+    for ([_][]const u8{ "Z", "Zi", "Zig", "Zig!" }) |input| {
+        std.debug.print("{s}\n", .{encode(input, &output)});
+    }
+}
+`,
+        solution: String.raw`const std = @import("std");
+
+const alphabet = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/";
+
+// The caller supplies four output bytes per input block.
+fn encode(input: []const u8, output: []u8) []const u8 {
+    var read: usize = 0;
+    var written: usize = 0;
+    while (read < input.len) : (written += 4) {
+        const block = input[read..][0..@min(3, input.len - read)];
+        var word: u24 = 0;
+        for (block, 0..) |byte, i| {
+            const shift: u5 = @intCast(16 - 8 * i);
+            word |= @as(u24, byte) << shift;
+        }
+
+        output[written] = alphabet[(word >> 18) & 0x3f];
+        output[written + 1] = alphabet[(word >> 12) & 0x3f];
+        output[written + 2] = if (block.len > 1) alphabet[(word >> 6) & 0x3f] else '=';
+        output[written + 3] = if (block.len > 2) alphabet[word & 0x3f] else '=';
+        read += block.len;
+    }
+    return output[0..written];
+}
+
+pub fn main() void {
+    var output: [8]u8 = undefined;
+    for ([_][]const u8{ "Z", "Zi", "Zig", "Zig!" }) |input| {
+        std.debug.print("{s}\n", .{encode(input, &output)});
+    }
+}
+`,
+        expected: "Wg==\nWmk=\nWmln\nWmlnIQ==", hint: "<code>block.len &gt; 1</code> enables the third character, and <code>block.len &gt; 2</code> enables the fourth."
+      },
+      {
+        id: "base64-decode", title: "Decode and validate input", minutes: 12, reference: "Errors",
+        reading: "https://pedropark99.github.io/zig-book/Chapters/01-base64.html",
+        explanation: [
+          "A decoder needs a writable slice with the right length. The standard library’s <code>calcSizeForSlice</code> computes that length and can reject invalid padding.",
+  "The <code>decode</code> call writes into the slice and returns an error for malformed input. Propagating the error lets the caller choose a message."
+        ],
+        task: "Call the decoder with the exact-size output slice. Propagate failures so the final test prints <code>invalid Base64</code>.",
+        starter: String.raw`const std = @import("std");
+
+fn decode(input: []const u8, output: []u8) ![]const u8 {
+    const decoder = std.base64.standard.Decoder;
+    const size = try decoder.calcSizeForSlice(input);
+    if (size > output.len) return error.BufferTooSmall;
+    const result = output[0..size];
+    @memset(result, '?');
+    return result;
+}
+
+pub fn main() void {
+    var output: [4]u8 = undefined;
+    for ([_][]const u8{ "Wg==", "WmlnIQ==", "W!ln" }) |input| {
+        const decoded = decode(input, &output) catch {
+            std.debug.print("invalid Base64\n", .{});
+            continue;
+        };
+        std.debug.print("{s}\n", .{decoded});
+    }
+}
+`,
+        solution: String.raw`const std = @import("std");
+
+fn decode(input: []const u8, output: []u8) ![]const u8 {
+    const decoder = std.base64.standard.Decoder;
+    const size = try decoder.calcSizeForSlice(input);
+    if (size > output.len) return error.BufferTooSmall;
+    const result = output[0..size];
+    try decoder.decode(result, input);
+    return result;
+}
+
+pub fn main() void {
+    var output: [4]u8 = undefined;
+    for ([_][]const u8{ "Wg==", "WmlnIQ==", "W!ln" }) |input| {
+        const decoded = decode(input, &output) catch {
+            std.debug.print("invalid Base64\n", .{});
+            continue;
+        };
+        std.debug.print("{s}\n", .{decoded});
+    }
+}
+`,
+        expected: "Z\nZig!\ninvalid Base64", hint: "Use <code>try decoder.decode(result, input);</code> before returning the decoded bytes."
       }
     ]
   }

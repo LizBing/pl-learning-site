@@ -124,6 +124,7 @@ code, pre, kbd { font-family: var(--mono); }
 .lesson-info dd { font-size: .875rem; }
 .lesson-intro + .lesson-intro { margin-top: 10px; }
 .lesson-intro code { color: var(--accent); overflow-wrap: anywhere; }
+.lesson-resources { display: flex; flex-wrap: wrap; column-gap: 16px; }
 .reference-link { display: inline-block; margin-top: 12px; color: var(--accent); font-size: .875rem; text-decoration: underline; text-underline-offset: 3px; }
 .task-card { background: #232531; border: 1px solid #3a3d4b; border-radius: 10px; margin-top: 17px; padding: 12px; }
 .task-card h3 { display: flex; align-items: center; gap: 7px; color: var(--text); margin: 0 0 7px; }

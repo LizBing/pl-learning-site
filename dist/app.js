@@ -143,7 +143,10 @@ function lessonInfo(lesson) {
         <button type="button" class="button button-quiet" id="load-solution">Load example</button>
       </details>
     </details>
-    ${lesson.reference ? `<a class="reference-link" href="${lesson.reference}" target="_blank" rel="noopener noreferrer">${escapeHtml(course.referenceLabel)}</a>` : ""}
+    ${lesson.reference ? `<div class="lesson-resources">
+      <a class="reference-link" href="${lesson.reference}" target="_blank" rel="noopener noreferrer">${escapeHtml(course.referenceLabel)}</a>
+      ${lesson.reading ? `<a class="reference-link" href="${lesson.reading}" target="_blank" rel="noopener noreferrer">Read the chapter in Introduction to Zig</a>` : ""}
+    </div>` : ""}
     <div class="lesson-nav">
       ${index > 0 ? `<a class="button button-quiet" href="${lessonLink(lessons[index - 1])}">Previous lesson</a>` : ""}
       <a class="button button-quiet lesson-next" href="${next ? lessonLink(next) : "#progress"}">${next ? "Next lesson" : "View progress"}</a>

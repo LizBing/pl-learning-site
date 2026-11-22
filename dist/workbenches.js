@@ -19,7 +19,7 @@ export const workbenches = {
     storageKey: "zig-workbench-v1",
     file: "main.zig",
     art: { path: "zig-poster.jpg", width: 1100, height: 733 },
-    description: "Learn Zig’s fundamentals and practice working with structs, pointers, and compile-time code.",
+    description: "Fix small Zig programs, work with memory and errors, and build a Base64 encoder.",
     playgroundCode: sandbox,
     playgroundNote: '<h3>Browser target</h3><p>The editor compiles for <code>wasm32-wasi</code>. Calls such as <code>std.debug.print</code> appear in the output.</p><a href="' + zigDocs + '" target="_blank" rel="noopener noreferrer">Open the Zig language reference</a>',
     modules: zigModules.map(module => ({
