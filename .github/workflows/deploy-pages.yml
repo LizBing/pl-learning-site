@@ -26,6 +26,23 @@ jobs:
         with:
           persist-credentials: false
       - uses: actions/configure-pages@v5
+      - name: Generate homepage metadata
+        run: |
+          node --input-type=module <<'JS'
+          import { writeFileSync } from "node:fs";
+          import { workbenches } from "./dist/workbenches.js";
+
+          const courses = Object.values(workbenches).map(({ name, modules }) => ({
+            name,
+            lessons: modules.reduce((total, module) => total + module.lessons.length, 0),
+          }));
+
+          writeFileSync("dist/workbench-info.json", JSON.stringify({
+            revision: process.env.GITHUB_SHA,
+            publishedAt: new Date().toISOString(),
+            courses,
+          }) + "\n");
+          JS
       - uses: actions/upload-pages-artifact@v3
         with:
           path: ./dist
