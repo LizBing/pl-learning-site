@@ -9,13 +9,13 @@ export const workbenches = {
     storageKey: "workbench:go:v1",
     file: "main.go",
     art: { path: "gopher.jpg", width: 900, height: 600 },
-    description: "Build from variables and functions to interfaces, errors, and concurrency.",
     playgroundCode,
     playgroundNote: '<h3>Supported packages</h3><p>The editor includes selected functions from <code>fmt</code>, <code>strings</code>, <code>errors</code>, <code>math</code>, and <code>strconv</code>.</p><a href="https://go.dev/play/" target="_blank" rel="noopener noreferrer">Open the official Go playground</a>'
   },
   zig: {
     id: "zig",
     name: "Zig",
+    referenceLabel: "Read the Zig reference",
     storageKey: "zig-workbench-v1",
     file: "main.zig",
     art: { path: "zig-poster.jpg", width: 1100, height: 733 },
