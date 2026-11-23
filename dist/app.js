@@ -182,7 +182,7 @@ function editorPanel(lesson) {
     </div>
     <div class="output-heading"><h3>${icon("terminal", 16)} Output</h3><button type="button" id="clear" class="button button-quiet" hidden>Clear</button></div>
     <div class="output" id="output" aria-live="polite" aria-atomic="true"><p class="output-placeholder">Run your code to see the output here.</p></div>
-    <div class="editor-footer"><span id="editor-shortcut"><kbd>${/Mac|iPhone|iPad/.test(navigator.platform) ? "⌘" : "Ctrl"}</kbd> <kbd>Enter</kbd> to run</span><span class="editor-notice" id="editor-notice" role="status"></span>${lesson ? `<button type="button" id="check" class="button button-outline">${icon("check", 17)} Check answer</button>` : ""}</div>
+    <div class="editor-footer"><span id="editor-shortcut"><kbd>${/Mac|iPhone|iPad/.test(navigator.platform) ? "⌘" : "Ctrl"}</kbd> <kbd>Enter</kbd> to run${isHaskell ? ", <kbd>Tab</kbd> to indent, <kbd>Esc</kbd> then <kbd>Tab</kbd> to leave" : ""}</span><span class="editor-notice" id="editor-notice" role="status"></span>${lesson ? `<button type="button" id="check" class="button button-outline">${icon("check", 17)} Check answer</button>` : ""}</div>
   </section>`;
 }
 
@@ -320,6 +320,13 @@ function setupEditor(lesson) {
     updateCode();
   }
 
+  function insertText(text) {
+    if (!document.execCommand("insertText", false, text)) {
+      input.setRangeText(text, input.selectionStart, input.selectionEnd, "end");
+      saveDraft();
+    }
+  }
+
   function showOutput(html) {
     output.innerHTML = html;
     clear.hidden = !html || html === placeholder;
@@ -387,7 +394,21 @@ function setupEditor(lesson) {
   updateCode();
   input.addEventListener("input", saveDraft);
   input.addEventListener("scroll", syncScroll);
+  let allowTabNavigation = false;
+  input.addEventListener("blur", () => { allowTabNavigation = false; });
   input.addEventListener("keydown", event => {
+    if (isHaskell && !event.isComposing) {
+      const indent = "  ";
+      const shouldIndent = event.key === "Tab" && !allowTabNavigation &&
+        !event.shiftKey && !event.metaKey && !event.ctrlKey && !event.altKey;
+      allowTabNavigation = event.key === "Escape";
+      if (shouldIndent) {
+        event.preventDefault();
+        const remainingLength = input.value.length - (input.selectionEnd - input.selectionStart);
+        if (remainingLength + indent.length <= input.maxLength) insertText(indent);
+        return;
+      }
+    }
     if (event.key === "Enter" && !event.metaKey && !event.ctrlKey) {
       const start = input.selectionStart;
       const currentLine = input.value.slice(0, start).split("\n").at(-1);
@@ -395,10 +416,7 @@ function setupEditor(lesson) {
       const indent = currentLine.trimEnd().endsWith("{") ? prefix + (isZig ? "    " : "\t") : prefix;
       if (indent) {
         event.preventDefault();
-        if (!document.execCommand("insertText", false, "\n" + indent)) {
-          input.setRangeText("\n" + indent, start, input.selectionEnd, "end");
-          saveDraft();
-        }
+        insertText("\n" + indent);
       }
     }
   });
