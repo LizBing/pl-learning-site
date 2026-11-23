@@ -182,7 +182,7 @@ function editorPanel(lesson) {
     </div>
     <div class="output-heading"><h3>${icon("terminal", 16)} Output</h3><button type="button" id="clear" class="button button-quiet" hidden>Clear</button></div>
     <div class="output" id="output" aria-live="polite" aria-atomic="true"><p class="output-placeholder">Run your code to see the output here.</p></div>
-    <div class="editor-footer"><span id="editor-shortcut"><kbd>${/Mac|iPhone|iPad/.test(navigator.platform) ? "⌘" : "Ctrl"}</kbd> <kbd>Enter</kbd> to run${isHaskell ? ", <kbd>Tab</kbd> to indent, <kbd>Esc</kbd> then <kbd>Tab</kbd> to leave" : ""}</span><span class="editor-notice" id="editor-notice" role="status"></span>${lesson ? `<button type="button" id="check" class="button button-outline">${icon("check", 17)} Check answer</button>` : ""}</div>
+    <div class="editor-footer"><span id="editor-shortcut"><kbd>${/Mac|iPhone|iPad/.test(navigator.platform) ? "⌘" : "Ctrl"}</kbd> <kbd>Enter</kbd> to run, <kbd>Tab</kbd> to indent, <kbd>Esc</kbd> then <kbd>Tab</kbd> to leave</span><span class="editor-notice" id="editor-notice" role="status"></span>${lesson ? `<button type="button" id="check" class="button button-outline">${icon("check", 17)} Check answer</button>` : ""}</div>
   </section>`;
 }
 
@@ -394,18 +394,18 @@ function setupEditor(lesson) {
   updateCode();
   input.addEventListener("input", saveDraft);
   input.addEventListener("scroll", syncScroll);
+  const tabIndent = isHaskell ? "  " : isZig ? "    " : "\t";
   let allowTabNavigation = false;
   input.addEventListener("blur", () => { allowTabNavigation = false; });
   input.addEventListener("keydown", event => {
-    if (isHaskell && !event.isComposing) {
-      const indent = "  ";
+    if (!event.isComposing) {
       const shouldIndent = event.key === "Tab" && !allowTabNavigation &&
         !event.shiftKey && !event.metaKey && !event.ctrlKey && !event.altKey;
       allowTabNavigation = event.key === "Escape";
       if (shouldIndent) {
         event.preventDefault();
         const remainingLength = input.value.length - (input.selectionEnd - input.selectionStart);
-        if (remainingLength + indent.length <= input.maxLength) insertText(indent);
+        if (remainingLength + tabIndent.length <= input.maxLength) insertText(tabIndent);
         return;
       }
     }
